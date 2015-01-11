@@ -1,0 +1,26 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "mydexterid@users.noreply.github.com",
+    "longName": "Bp Menetrend",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/logo.png",
+                "menuIcon": true,
+                "name": "LOGO",
+                "type": "png"
+            }
+        ]
+    },
+    "shortName": "Bp Menetrend",
+    "uuid": "3acd6df6-9075-4c9e-b4f2-4c9accfbb8bf",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
