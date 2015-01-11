@@ -123,12 +123,14 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
                     JSONObject trips = references.getJSONObject("trips");
                     JSONObject trip = trips.getJSONObject(trip_id);
                     String route_id = trip.getString("routeId");
-                    nearby_stops_details[i].direction_name = trip.getString("tripHeadsign");
+
                     nearby_stops_details[i].predicted_start_time = get_start_time(row, "predictedDepartureTime");
                     nearby_stops_details[i].start_time = get_start_time(row, "departureTime");
                     JSONObject routes = references.getJSONObject("routes");
                     JSONObject route = routes.getJSONObject(route_id);
-                    nearby_stops_details[i].line_number = route.getString("shortName");
+
+                    nearby_stops_details[i].direction_name = trim_headsign("*" + trip.getString("tripHeadsign"));
+                    nearby_stops_details[i].line_number = trim_line_number(route.getString("shortName"));
 
                 }
             }
@@ -136,6 +138,23 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
         } catch (Exception e) {
 
         }
+    }
+
+    private String trim_line_number(String line_number)
+    {
+        if (line_number.length() > 4)
+            return new String(line_number.substring(0,4));
+
+        return line_number;
+    }
+
+    private String trim_headsign(String headsign)
+    {
+
+        if (headsign.length() > (31 - 2))
+            return new String(headsign.substring(0,31 - 2));
+
+        return headsign;
     }
 
     private int get_start_time(JSONObject row, String time) throws JSONException {
@@ -265,13 +284,10 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
             nearby_stops_details[i].predicted_start_time = nearby_stops_details[i-1].predicted_start_time;
         }
         nearby_stops_details[place].start_time = start_time;
-        if (line_num.length() > 4)
-            line_num = line_num.substring(0,4);
-        nearby_stops_details[place].line_number = line_num;
+        nearby_stops_details[place].line_number = trim_line_number(line_num);
         nearby_stops_details[place].stop_id = stop_id;
         nearby_stops_details[place].trip_id = stop_times_id;
-        if (headsign.length() > (31 - 2))
-            headsign = headsign.substring(0,31 - 2);
-        nearby_stops_details[place].direction_name = "->" + headsign;
+        nearby_stops_details[place].direction_name = "->" + trim_headsign(headsign);
+
     }
 }
