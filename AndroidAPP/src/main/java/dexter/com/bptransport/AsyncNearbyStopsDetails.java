@@ -27,6 +27,8 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
     private PebbleService service;
     private Context local_context;
     private JSONObject json;
+    private static final int EXCEPTION_DATE_ADDED   = 1;
+    private static final int EXCEPTION_DATE_REMOVED = 2;
 
     public AsyncNearbyStopsDetails(PebbleService srv) {
         service = srv;
@@ -206,7 +208,7 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
 
         String joined = TextUtils.join(",", stop_ids.toArray());
 
-        String my_query = "SELECT stop_times.start_time, time_sequences.sequence, stop_sequences.sequence, strings.string, stop_times._id, calendar.bitfield, calendar.start_date, calendar.delta, calendar_dates.date, calendar_dates.exception_type, headsignstrings.string FROM stop_times INNER JOIN time_sequences ON time_sequences._id=stop_times.time_seq_id INNER JOIN stop_sequences ON stop_sequences._id=stop_times.stop_seq_id INNER JOIN trips ON trips._id=stop_times._id INNER JOIN routes ON routes._id=trips.route_id INNER JOIN strings ON strings._id=routes.short_name INNER JOIN calendar ON trips.service_id=calendar._id INNER JOIN calendar_dates ON trips.service_id=calendar_dates._id INNER JOIN strings headsignstrings ON headsignstrings._id = trips.headsign WHERE stop_times.stop_seq_id IN (";
+        String my_query = "SELECT stop_times.start_time, time_sequences.sequence, stop_sequences.sequence, strings.string, stop_times._id, calendar.bitfield, calendar.start_date, calendar.delta, calendar_dates.date, calendar_dates.exception_type, headsignstrings.string FROM stop_times INNER JOIN time_sequences ON time_sequences._id=stop_times.time_seq_id INNER JOIN stop_sequences ON stop_sequences._id=stop_times.stop_seq_id INNER JOIN trips ON trips._id=stop_times._id INNER JOIN routes ON routes._id=trips.route_id INNER JOIN strings ON strings._id=routes.short_name INNER JOIN calendar ON trips.service_id=calendar._id LEFT OUTER JOIN calendar_dates ON trips.service_id=calendar_dates._id INNER JOIN strings headsignstrings ON headsignstrings._id = trips.headsign WHERE stop_times.stop_seq_id IN (";
         my_query += joined;
         //my_query += ") AND trips.direction_id LIKE ? GROUP BY trips._id";
         //Cursor cursor = db.rawQuery(my_query, new String[]{String.valueOf(direction)});
@@ -230,24 +232,29 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
             String line_num = cursor.getString(3);
             int stop_times_id = cursor.getInt(4);
             int bitfield = cursor.getInt(5);
-            int exception_date = cursor.getInt(8);
-            Date exception_d = new Date((long)exception_date*1000);
-            int exception_type = cursor.getInt(9);
+            Date exception_d = new Date();
             Date current_date = new Date();
+            int exception_type = 0;
+            boolean exception_exists = !cursor.isNull(8);
+            if (exception_exists) {
+                int exception_date = cursor.getInt(8);
+                exception_d = new Date((long)exception_date*1000);
+                exception_type = cursor.getInt(9);
+            }
+
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-            if (!sdf.format(current_date).equals(sdf.format(exception_d)) || exception_type != 1) {
-            //if (!current_date.equals(exception_d) || exception_type != 1) {
+            if (exception_exists && sdf.format(current_date).equals(sdf.format(exception_d)) && exception_type == EXCEPTION_DATE_REMOVED) {
+                continue;
+            }
+            else if (!exception_exists  || (exception_exists && !sdf.format(current_date).equals(sdf.format(exception_d)))) {
                 if ((day_of_week == 1 && ((bitfield & 1L) == 0)) || (day_of_week != 1 && ((bitfield & (1L << 8 - day_of_week)) == 0)))
                     continue;
-
                 int start_date = cursor.getInt(6);
                 int end_date = start_date + cursor.getInt(7);
                 if (start_date > unixTime || end_date < unixTime)
                     continue;
-
-                if (current_date.equals(exception_d) && exception_type == 2)
-                    continue;
             }
+
             int i = 0;
             for(; i < stop_sequence.length && !stop_sequence[i].contentEquals(String.valueOf(id)); i++)
             {
