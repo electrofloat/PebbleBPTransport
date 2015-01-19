@@ -224,34 +224,24 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
         //int current_time = 1241;
         long unixTime = System.currentTimeMillis() / 1000L;
         int day_of_week = calendar.get(Calendar.DAY_OF_WEEK);
+        Date current_date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         while (cursor.moveToNext())
         {
-            String headsign = cursor.getString(10);
-            int start_time = cursor.getInt(0);
-            String time_sequence_string = cursor.getString(1);
-            String stop_sequence_string = cursor.getString(2);
-            time_sequence_string = time_sequence_string.substring(1, time_sequence_string.length()-1);
-            stop_sequence_string = stop_sequence_string.substring(1, stop_sequence_string.length()-1);
-            String[] time_sequence = time_sequence_string.split(",");
-            String[] stop_sequence = stop_sequence_string.split(",");
-            String line_num = cursor.getString(3);
-            int stop_times_id = cursor.getInt(4);
             int bitfield = cursor.getInt(5);
-            Date exception_d = new Date();
-            Date current_date = new Date();
+            Date exception_date = new Date();
             int exception_type = 0;
             boolean exception_exists = !cursor.isNull(8);
             if (exception_exists) {
-                int exception_date = cursor.getInt(8);
-                exception_d = new Date((long)exception_date*1000);
+                int exception_rawdate = cursor.getInt(8);
+                exception_date = new Date((long)exception_rawdate*1000);
                 exception_type = cursor.getInt(9);
             }
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-            if (exception_exists && sdf.format(current_date).equals(sdf.format(exception_d)) && exception_type == EXCEPTION_DATE_REMOVED) {
+            if (exception_exists && sdf.format(current_date).equals(sdf.format(exception_date)) && exception_type == EXCEPTION_DATE_REMOVED) {
                 continue;
             }
-            else if (!exception_exists  || (exception_exists && !sdf.format(current_date).equals(sdf.format(exception_d)))) {
+            else if (!exception_exists  || (exception_exists && !sdf.format(current_date).equals(sdf.format(exception_date)))) {
                 if ((day_of_week == 1 && ((bitfield & 1L) == 0)) || (day_of_week != 1 && ((bitfield & (1L << 8 - day_of_week)) == 0)))
                     continue;
                 int start_date = cursor.getInt(6);
@@ -260,6 +250,13 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
                     continue;
             }
 
+            int start_time = cursor.getInt(0);
+            String time_sequence_string = cursor.getString(1);
+            String stop_sequence_string = cursor.getString(2);
+            time_sequence_string = time_sequence_string.substring(1, time_sequence_string.length()-1);
+            stop_sequence_string = stop_sequence_string.substring(1, stop_sequence_string.length()-1);
+            String[] time_sequence = time_sequence_string.split(",");
+            String[] stop_sequence = stop_sequence_string.split(",");
             int i = 0;
             for(; i < stop_sequence.length && !stop_sequence[i].contentEquals(String.valueOf(id)); i++)
             {
@@ -269,6 +266,9 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
             if (start_time < current_time)
                 continue;
 
+            String headsign = cursor.getString(10);
+            String line_num = cursor.getString(3);
+            int stop_times_id = cursor.getInt(4);
             insert_into_nearby_stops_details(nearby_stops_details, start_time, line_num, Integer.parseInt(stop_sequence[stop_sequence.length - 1]), stop_times_id, headsign);
         }
         cursor.close();
