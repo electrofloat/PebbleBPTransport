@@ -38,12 +38,15 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
     @Override
     protected PebbleService.NearbyStopsDetails[] doInBackground(Object... params) {
 
-        final long id = (Long)params[0];
-        Thread thread = new Thread(new Runnable(){
+        final long id = (Long) params[0];
+        Thread thread = new Thread(new Runnable() {
             @Override
-            public void run() { get_json(id);}});
+            public void run() {
+                get_json(id);
+            }
+        });
         thread.start();
-        PebbleService.NearbyStopsDetails[] nearby_stops_details = get_nearby_stops_details(id, (Integer)params[1]);
+        PebbleService.NearbyStopsDetails[] nearby_stops_details = get_nearby_stops_details(id, (Integer) params[1]);
         try {
             thread.join();
         } catch (Exception e) {
@@ -64,8 +67,7 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
 
     }
 
-    private void get_json(long id)
-    {
+    private void get_json(long id) {
         PebbleService.Stops stops = PebbleService.stops_cache.get(id);
         String string_id = "BKK_" + stops.string_id;
         try {
@@ -91,11 +93,9 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
         }
     }
 
-    private void combine_online_offline(PebbleService.NearbyStopsDetails[] nearby_stops_details)
-    {
+    private void combine_online_offline(PebbleService.NearbyStopsDetails[] nearby_stops_details) {
 
-      try {
-          //String d = json.getString("status");
+        try {
             if (!json.getString("status").equals("OK"))
                 return;
 
@@ -111,13 +111,10 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
                 current.set(Calendar.HOUR_OF_DAY, (nearby_stops_details[i].start_time / 60) / 60);
                 current.set(Calendar.MINUTE, (nearby_stops_details[i].start_time / 60) % 60);
                 current.set(Calendar.SECOND, 0);
-                //Long c = current.getTimeInMillis() / 1000;
-                if (departure_time == current.getTimeInMillis() / 1000)
-                {
+
+                if (departure_time == current.getTimeInMillis() / 1000) {
                     nearby_stops_details[i].predicted_start_time = get_start_time(row, "predictedDepartureTime");
-                }
-                else
-                {
+                } else {
                     shift_nearby_stops_details(i, nearby_stops_details);
 
                     String trip_id = row.getString("tripId");
@@ -208,10 +205,18 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
 
         String joined = TextUtils.join(",", stop_ids.toArray());
 
-        String my_query = "SELECT stop_times.start_time, time_sequences.sequence, stop_sequences.sequence, strings.string, stop_times._id, calendar.bitfield, calendar.start_date, calendar.delta, calendar_dates.date, calendar_dates.exception_type, headsignstrings.string FROM stop_times INNER JOIN time_sequences ON time_sequences._id=stop_times.time_seq_id INNER JOIN stop_sequences ON stop_sequences._id=stop_times.stop_seq_id INNER JOIN trips ON trips._id=stop_times._id INNER JOIN routes ON routes._id=trips.route_id INNER JOIN strings ON strings._id=routes.short_name INNER JOIN calendar ON trips.service_id=calendar._id LEFT OUTER JOIN calendar_dates ON trips.service_id=calendar_dates._id INNER JOIN strings headsignstrings ON headsignstrings._id = trips.headsign WHERE stop_times.stop_seq_id IN (";
+        String my_query = "SELECT stop_times.start_time, time_sequences.sequence, stop_sequences.sequence, strings.string, stop_times._id," +
+                           " calendar.bitfield, calendar.start_date, calendar.delta, calendar_dates.date, calendar_dates.exception_type, headsignstrings.string" +
+                           " FROM stop_times INNER JOIN time_sequences ON time_sequences._id=stop_times.time_seq_id" +
+                           " INNER JOIN stop_sequences ON stop_sequences._id=stop_times.stop_seq_id" +
+                           " INNER JOIN trips ON trips._id=stop_times._id" +
+                           " INNER JOIN routes ON routes._id=trips.route_id" +
+                           " INNER JOIN strings ON strings._id=routes.short_name" +
+                           " INNER JOIN calendar ON trips.service_id=calendar._id" +
+                           " LEFT OUTER JOIN calendar_dates ON trips.service_id=calendar_dates._id" +
+                           " INNER JOIN strings headsignstrings ON headsignstrings._id = trips.headsign" +
+                           " WHERE stop_times.stop_seq_id IN (";
         my_query += joined;
-        //my_query += ") AND trips.direction_id LIKE ? GROUP BY trips._id";
-        //Cursor cursor = db.rawQuery(my_query, new String[]{String.valueOf(direction)});
         my_query += ") GROUP BY trips._id";
         Cursor cursor = db.rawQuery(my_query, null);
         Calendar calendar = Calendar.getInstance();
