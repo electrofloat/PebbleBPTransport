@@ -221,9 +221,13 @@ public class AsyncNearbyStopsDetails extends AsyncTask<Object, Void, PebbleServi
         Cursor cursor = db.rawQuery(my_query, null);
         Calendar calendar = Calendar.getInstance();
         int current_time = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE);
-        //int current_time = 1241;
-        long unixTime = System.currentTimeMillis() / 1000L;
         int day_of_week = calendar.get(Calendar.DAY_OF_WEEK);
+        //int current_time = 1241;
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        long unixTime = calendar.getTimeInMillis() / 1000L;
         Date current_date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         while (cursor.moveToNext())
